@@ -1,0 +1,3011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Notes — Personal Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #f5f5f2;
+    --surface:    #ffffff;
+    --surface2:   #f9f9f7;
+    --surface3:   #f0efec;
+    --border:     #e4e3df;
+    --border2:    #d4d3ce;
+    --text:       #1a1917;
+    --text2:      #6b6a65;
+    --text3:      #a8a7a2;
+    --accent:     #2563eb;
+    --accent2:    #1d4ed8;
+    --accent-dim: rgba(37,99,235,0.08);
+    --red:        #dc2626;
+    --red-dim:    rgba(220,38,38,0.08);
+    --green:      #16a34a;
+    --green-dim:  rgba(22,163,74,0.08);
+    --blue:       #2563eb;
+    --blue-dim:   rgba(37,99,235,0.08);
+    --orange:     #ea580c;
+    --orange-dim: rgba(234,88,12,0.08);
+    --radius:     6px;
+    --radius-lg:  10px;
+    --shadow:     0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Layout */
+  .shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  .brand {
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .brand-sub {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .nav {
+    padding: 16px 10px;
+    flex: 1;
+  }
+
+  .nav-section {
+    margin-bottom: 24px;
+  }
+
+  .nav-label {
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 0 10px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13.5px;
+    font-weight: 400;
+    transition: all 0.15s;
+    position: relative;
+    user-select: none;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: white;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .sidebar-bottom {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    transition: background 0.15s;
+  }
+
+  .api-status:hover { background: var(--surface2); }
+
+  .api-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    flex-shrink: 0;
+  }
+
+  .api-dot.connected { background: var(--green); }
+
+  /* Main content */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .page { display: none; padding: 36px 40px; max-width: 1400px; }
+  .page.active { display: block; }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    line-height: 1.2;
+  }
+
+  .page-sub {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover { background: var(--accent2); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid transparent;
+  }
+
+  .btn-danger:hover { background: var(--red); color: white; }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ===================== HOME PAGE ===================== */
+  .digest-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .digest-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .digest-stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .digest-stat.overdue::before { background: var(--red); }
+  .digest-stat.today::before { background: var(--accent); }
+  .digest-stat.upcoming::before { background: var(--blue); }
+
+  .stat-num {
+    font-size: 38px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -1px;
+  }
+
+  .digest-stat.overdue .stat-num { color: var(--red); }
+  .digest-stat.today .stat-num { color: var(--accent); }
+  .digest-stat.upcoming .stat-num { color: var(--blue); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .digest-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .digest-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 14px;
+  }
+
+  .digest-task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .digest-task-item:last-child { border-bottom: none; }
+
+  .digest-task-item:hover .digest-task-title { color: var(--accent); }
+
+  .priority-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .p-high { background: var(--red); }
+  .p-medium { background: var(--accent); }
+  .p-low { background: var(--text3); }
+
+  .digest-task-title {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    transition: color 0.15s;
+  }
+
+  .digest-task-due {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .schedule-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+  }
+
+  .schedule-text {
+    font-size: 13.5px;
+    color: var(--text2);
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  .empty-state {
+    color: var(--text3);
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-style: italic;
+  }
+
+  /* ===================== SCAN PAGE ===================== */
+  .scan-drop-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--surface);
+  }
+
+  .scan-drop-zone:hover, .scan-drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .scan-drop-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scan-drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .scan-drop-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .scan-drop-sub {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .scan-preview {
+    display: none;
+    margin-top: 24px;
+  }
+
+  .scan-preview img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: block;
+    margin: 0 auto;
+  }
+
+  .scan-processing {
+    display: none;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scan-results { display: none; margin-top: 28px; }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: border-color 0.15s;
+    animation: slideIn 0.25s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card:hover { border-color: var(--border2); }
+
+  .result-card.accepted { border-color: var(--green); background: var(--green-dim); }
+  .result-card.dismissed { opacity: 0.4; }
+
+  .result-type-badge {
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .type-task { background: var(--accent-dim); color: var(--accent); }
+  .type-meeting { background: var(--blue-dim); color: var(--blue); }
+  .type-followup { background: var(--orange-dim); color: var(--orange); }
+  .type-note { background: var(--surface3); color: var(--text3); }
+
+  .result-body { flex: 1; }
+
+  .result-title {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .result-meta {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .result-actions { display: flex; gap: 8px; }
+
+  .result-edit {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .result-input {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .result-input:focus { border-color: var(--accent); }
+
+  select.result-input option { background: var(--surface2); }
+
+  /* ===================== TASKS PAGE ===================== */
+  .view-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .view-btn {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .view-btn.active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+
+  .filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text2);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .filter-select:focus { border-color: var(--accent); }
+  .filter-select option { background: var(--surface2); }
+
+  /* Task List */
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .task-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    animation: slideIn 0.2s ease forwards;
+  }
+
+  .task-item:hover { border-color: var(--border2); background: var(--surface2); }
+  .task-item.done { opacity: 0.5; }
+
+  .task-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border2);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .task-check:hover { border-color: var(--accent); }
+  .task-item.done .task-check { background: var(--green); border-color: var(--green); }
+
+  .task-check-inner {
+    display: none;
+    color: white;
+    font-size: 10px;
+  }
+
+  .task-item.done .task-check-inner { display: block; }
+
+  .task-body { flex: 1; min-width: 0; }
+
+  .task-title {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .task-item.done .task-title { text-decoration: line-through; color: var(--text3); }
+
+  .task-tags {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .tag-project { background: var(--accent-dim); color: var(--accent); }
+  .tag-meeting { background: var(--blue-dim); color: var(--blue); }
+  .tag-followup { background: var(--orange-dim); color: var(--orange); }
+  .tag-task { background: var(--surface3); color: var(--text3); }
+  .tag-note { background: var(--surface3); color: var(--text3); }
+
+  .task-due-label {
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text3);
+  }
+
+  .task-due-label.overdue { color: var(--red); }
+  .task-due-label.due-today { color: var(--accent); }
+
+  .task-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .task-item:hover .task-actions { opacity: 1; }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+
+  .icon-btn:hover { background: var(--surface3); color: var(--text); }
+  .icon-btn.delete:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+
+  /* Kanban */
+  .kanban {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .kanban-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .kanban-col-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+  }
+
+  .kanban-col-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text2);
+    flex: 1;
+  }
+
+  .kanban-col-count {
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text3);
+    background: var(--surface3);
+    padding: 1px 8px;
+    border-radius: 10px;
+  }
+
+  .kanban-col-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .kanban-todo .kanban-col-indicator { background: var(--text3); }
+  .kanban-inprogress .kanban-col-indicator { background: var(--accent); }
+  .kanban-done .kanban-col-indicator { background: var(--green); }
+
+  .kanban-items {
+    padding: 12px;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .kanban-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    animation: slideIn 0.2s ease forwards;
+  }
+
+  .kanban-card:hover { border-color: var(--border2); background: var(--surface3); }
+
+  .kanban-card-title {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .kanban-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .kanban-card-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    margin-top: 8px;
+  }
+
+  .kanban-card:hover .kanban-card-actions { opacity: 1; }
+
+  /* ===================== PROJECTS PAGE ===================== */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    animation: slideIn 0.2s ease forwards;
+  }
+
+  .project-card:hover { border-color: var(--border2); }
+
+  .project-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .project-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+    letter-spacing: -0.2px;
+  }
+
+  .project-stats {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .project-progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .project-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .project-task-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .project-task-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* ===================== SCHEDULE PAGE ===================== */
+  .schedule-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-top: 24px;
+    display: none;
+  }
+
+  .schedule-result-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  .schedule-result-text {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  /* ===================== MODAL ===================== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    width: 100%;
+    max-width: 540px;
+    animation: modalIn 0.2s ease;
+    position: relative;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 22px;
+    letter-spacing: -0.3px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+  }
+
+  .form-select option, .form-select optgroup { background: var(--surface2); }
+
+  .form-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ===================== SETTINGS PAGE ===================== */
+  .settings-section {
+    margin-bottom: 36px;
+  }
+
+  .settings-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .api-key-input {
+    display: flex;
+    gap: 10px;
+  }
+
+  .api-key-input .form-input { flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+
+  .settings-hint {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.6;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--surface);
+    z-index: 9000;
+    animation: toastIn 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    max-width: 300px;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .sidebar { width: 60px; min-width: 60px; }
+    .brand-name, .brand-sub, .nav-item span, .nav-label, .api-status span { display: none; }
+    .nav-item { justify-content: center; padding: 10px; }
+    .nav-icon { width: 18px; height: 18px; opacity: 0.8; }
+    .nav-badge { display: none; }
+    .page { padding: 20px 16px; }
+    .digest-grid { grid-template-columns: 1fr; }
+    .digest-row { grid-template-columns: 1fr; }
+    .kanban { grid-template-columns: 1fr; }
+    .projects-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; gap: 12px; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* No items */
+  .no-items {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  .no-items-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-name">Daily Notes</div>
+      <div class="brand-sub">Personal Assistant</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <div class="nav-item active" onclick="navigate('home')">
+          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Home</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Capture</div>
+        <div class="nav-item" onclick="navigate('scan')">
+          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Scan Notes</span>
+        </div>
+        <div class="nav-item" onclick="navigate('schedule')">
+          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Schedule</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Organize</div>
+        <div class="nav-item" onclick="navigate('tasks')" id="nav-tasks">
+          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          <span>Tasks</span>
+          <span class="nav-badge" id="overdue-badge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" onclick="navigate('projects')">
+          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>Projects</span>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="api-status" onclick="navigate('settings')" id="api-status-indicator">
+        <div class="api-dot" id="api-dot"></div>
+        <span id="api-status-text">No API key</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Good morning.</div>
+          <div class="page-sub" id="today-date"></div>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('scan')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Scan Today's Notes
+        </button>
+      </div>
+
+      <div class="digest-grid">
+        <div class="digest-stat overdue">
+          <div class="stat-num" id="stat-overdue">0</div>
+          <div class="stat-label">Overdue</div>
+        </div>
+        <div class="digest-stat today">
+          <div class="stat-num" id="stat-today">0</div>
+          <div class="stat-label">Due Today</div>
+        </div>
+        <div class="digest-stat upcoming">
+          <div class="stat-num" id="stat-upcoming">0</div>
+          <div class="stat-label">This Week</div>
+        </div>
+      </div>
+
+      <div class="digest-row">
+        <div class="card">
+          <div class="digest-section-title">Priority Items</div>
+          <div id="home-priority-tasks"><div class="empty-state">No tasks yet — scan your notes to get started.</div></div>
+        </div>
+        <div class="card">
+          <div class="digest-section-title">Due Today</div>
+          <div id="home-today-tasks"><div class="empty-state">Nothing due today.</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="digest-section-title" style="margin-bottom:0">Weekly Briefing</div>
+          <span style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;cursor:pointer" onclick="navigate('schedule')">View full schedule →</span>
+        </div>
+        <div id="home-schedule-summary" class="empty-state" style="font-size:13px;font-family:'IBM Plex Mono',monospace">No schedule imported yet. Go to Schedule → import a screenshot of your calendar.</div>
+      </div>
+    </div>
+
+    <!-- SCAN -->
+    <div class="page" id="page-scan">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Scan Notes</div>
+          <div class="page-sub">Photo → structured tasks, meetings, and follow-ups</div>
+        </div>
+      </div>
+
+      <div class="scan-drop-zone" id="scan-drop-zone">
+        <input type="file" id="scan-file-input" accept="image/*" capture="environment" onchange="handleScanFile(event)">
+        <div class="scan-drop-icon">📓</div>
+        <div class="scan-drop-title">Drop a photo or tap to capture</div>
+        <div class="scan-drop-sub">JPG, PNG, HEIC — any image of your notebook</div>
+      </div>
+
+      <div class="scan-preview" id="scan-preview">
+        <img id="scan-preview-img" src="" alt="Note preview">
+        <div style="text-align:center;margin-top:16px;display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-primary" onclick="processScan()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Extract Items
+          </button>
+          <button class="btn btn-ghost" onclick="clearScan()">Clear</button>
+        </div>
+      </div>
+
+      <div class="scan-processing" id="scan-processing">
+        <div class="spinner"></div>
+        <div style="color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:13px">Reading your notes...</div>
+      </div>
+
+      <div class="scan-results" id="scan-results">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--text)">Review Extracted Items</div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary btn-sm" onclick="acceptAllItems()">Accept All</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearScan()">Start Over</button>
+          </div>
+        </div>
+        <div id="scan-results-list"></div>
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px" id="scan-confirm-row" style="display:none">
+          <button class="btn btn-primary" onclick="confirmAccepted()" id="confirm-accepted-btn">Add Accepted Items to Tasks</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Tasks</div>
+          <div class="page-sub" id="tasks-count-sub"></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setTaskView('list')" id="view-list-btn">List</button>
+            <button class="view-btn" onclick="setTaskView('kanban')" id="view-kanban-btn">Kanban</button>
+          </div>
+          <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <select class="filter-select" id="filter-project" onchange="renderTasks()">
+          <option value="">All Projects</option>
+        </select>
+        <select class="filter-select" id="filter-type" onchange="renderTasks()">
+          <option value="">All Types</option>
+          <option value="task">Task</option>
+          <option value="meeting">Meeting</option>
+          <option value="followup">Follow-up</option>
+        </select>
+        <select class="filter-select" id="filter-priority" onchange="renderTasks()">
+          <option value="">All Priorities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select class="filter-select" id="filter-status" onchange="renderTasks()">
+          <option value="active">Active</option>
+          <option value="all">All</option>
+          <option value="done">Completed</option>
+        </select>
+      </div>
+
+      <div id="task-list-view">
+        <div class="task-list" id="task-list"></div>
+      </div>
+
+      <div id="task-kanban-view" style="display:none">
+        <div class="kanban">
+          <div class="kanban-col kanban-todo">
+            <div class="kanban-col-header">
+              <div class="kanban-col-indicator"></div>
+              <div class="kanban-col-title">To Do</div>
+              <div class="kanban-col-count" id="kanban-todo-count">0</div>
+            </div>
+            <div class="kanban-items" id="kanban-todo"></div>
+          </div>
+          <div class="kanban-col kanban-inprogress">
+            <div class="kanban-col-header">
+              <div class="kanban-col-indicator"></div>
+              <div class="kanban-col-title">In Progress</div>
+              <div class="kanban-col-count" id="kanban-inprogress-count">0</div>
+            </div>
+            <div class="kanban-items" id="kanban-inprogress"></div>
+          </div>
+          <div class="kanban-col kanban-done">
+            <div class="kanban-col-header">
+              <div class="kanban-col-indicator"></div>
+              <div class="kanban-col-title">Done</div>
+              <div class="kanban-col-count" id="kanban-done-count">0</div>
+            </div>
+            <div class="kanban-items" id="kanban-done"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="page" id="page-projects">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Projects</div>
+          <div class="page-sub">Organized by topic & initiative</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddProjectModal()">+ New Project</button>
+      </div>
+      <div class="projects-grid" id="projects-grid"></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Schedule</div>
+          <div class="page-sub">Import a screenshot of your calendar for a weekly briefing</div>
+        </div>
+      </div>
+
+      <div class="scan-drop-zone" id="schedule-drop-zone">
+        <input type="file" id="schedule-file-input" accept="image/*" onchange="handleScheduleFile(event)">
+        <div class="scan-drop-icon">📅</div>
+        <div class="scan-drop-title">Drop your calendar screenshot</div>
+        <div class="scan-drop-sub">Any screenshot of your weekly view — Outlook, Google Cal, Teams, anything</div>
+      </div>
+
+      <div class="scan-preview" id="schedule-preview">
+        <img id="schedule-preview-img" src="" alt="Schedule preview">
+        <div style="text-align:center;margin-top:16px;display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-primary" onclick="processSchedule()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Generate Briefing
+          </button>
+          <button class="btn btn-ghost" onclick="clearSchedule()">Clear</button>
+        </div>
+      </div>
+
+      <div class="scan-processing" id="schedule-processing" style="display:none">
+        <div class="spinner"></div>
+        <div style="color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:13px">Analyzing your schedule...</div>
+      </div>
+
+      <div class="schedule-result" id="schedule-result">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="schedule-result-title" style="margin-bottom:0">Weekly Briefing</div>
+          <button class="btn btn-ghost btn-sm" onclick="wipeAndReimportSchedule()">↑ Import New Week</button>
+        </div>
+        <div id="schedule-result-text"></div>
+      </div>
+
+      <div id="past-weeks-section"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Configuration & data management</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Anthropic API Key</div>
+        <div class="api-key-input">
+          <input type="password" class="form-input" id="api-key-field" placeholder="sk-ant-..." autocomplete="off">
+          <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+        </div>
+        <div class="settings-hint">
+          Your key is stored only in this browser's local storage — never sent anywhere except directly to api.anthropic.com.<br>
+          Get a key at console.anthropic.com → API Keys.
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Data Management</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="exportData()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export JSON Backup
+          </button>
+          <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Import Backup
+          </button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+          <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">About</div>
+        <div class="settings-hint">
+          Daily Notes v1.0 — A personal assistant that lives in your browser.<br>
+          All data is stored locally. Nothing leaves your device except API calls to Anthropic.
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
+    <div class="modal-title" id="task-modal-title">New Task</div>
+    <input type="hidden" id="task-modal-id">
+
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input type="text" class="form-input" id="task-title-input" placeholder="What needs to be done?">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="task-type-input">
+          <option value="task">Task</option>
+          <option value="meeting">Meeting</option>
+          <option value="followup">Follow-up</option>
+          <option value="note">Note</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-select" id="task-priority-input">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Due Date</label>
+        <input type="date" class="form-input" id="task-due-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project</label>
+        <select class="form-select" id="task-project-input">
+          <option value="">No Project</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-select" id="task-status-input">
+        <option value="todo">To Do</option>
+        <option value="inprogress">In Progress</option>
+        <option value="done">Done</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="task-notes-input" placeholder="Any additional context..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('project-modal')">✕</button>
+    <div class="modal-title" id="project-modal-title">New Project</div>
+    <input type="hidden" id="project-modal-id">
+
+    <div class="form-group">
+      <label class="form-label">Project Name</label>
+      <input type="text" class="form-input" id="project-name-input" placeholder="e.g. Q3 Marketing Launch, Onboarding Revamp">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-textarea" id="project-desc-input" placeholder="What's this project about?"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-primary" id="project-modal-save-btn" onclick="saveProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== STATE =====================
+let state = {
+  tasks: [],
+  projects: [],
+  scheduleSummary: '',
+  lastScanDate: null
+};
+
+let scanImageBase64 = null;
+let scheduleImageBase64 = null;
+let currentTaskView = 'list';
+let pendingScanItems = [];
+
+// ===================== INIT =====================
+function init() {
+  loadState();
+  updateTodayDate();
+  updateApiStatus();
+  renderHome();
+  renderTasks();
+  renderProjects();
+  updateProjectDropdowns();
+  loadApiKeyField();
+  renderPastWeeks();
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('fieldnotes_state');
+    if (saved) {
+      state = { ...state, ...JSON.parse(saved) };
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('fieldnotes_state', JSON.stringify(state));
+  } catch(e) {}
+}
+
+function updateTodayDate() {
+  const now = new Date();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('today-date').textContent = now.toLocaleDateString('en-US', opts);
+
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good morning.' : h < 17 ? 'Good afternoon.' : 'Good evening.';
+  document.querySelector('.page-title').textContent = greet;
+}
+
+// ===================== NAVIGATION =====================
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+
+  const navMap = { home: 0, scan: 1, schedule: 2, tasks: 3, projects: 4, settings: 5 };
+  document.querySelectorAll('.nav-item')[navMap[page]]?.classList.add('active');
+
+  if (page === 'home') renderHome();
+  if (page === 'tasks') renderTasks();
+  if (page === 'projects') renderProjects();
+  if (page === 'schedule') {
+    if (state.scheduleData) {
+      document.getElementById('schedule-drop-zone').style.display = 'none';
+      renderScheduleResult();
+    }
+    renderPastWeeks();
+  }
+}
+
+// ===================== API =====================
+function getApiKey() {
+  return localStorage.getItem('fieldnotes_api_key') || '';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-field').value.trim();
+  if (!key) { showToast('Enter an API key first', 'error'); return; }
+  localStorage.setItem('fieldnotes_api_key', key);
+  updateApiStatus();
+  showToast('API key saved', 'success');
+}
+
+function loadApiKeyField() {
+  const k = getApiKey();
+  if (k) document.getElementById('api-key-field').value = k;
+}
+
+function updateApiStatus() {
+  const k = getApiKey();
+  const dot = document.getElementById('api-dot');
+  const txt = document.getElementById('api-status-text');
+  if (k) {
+    dot.classList.add('connected');
+    txt.textContent = 'API connected';
+  } else {
+    dot.classList.remove('connected');
+    txt.textContent = 'No API key';
+  }
+}
+
+async function callClaude(messages, systemPrompt) {
+  const key = getApiKey();
+  if (!key) throw new Error('No API key configured. Go to Settings to add your Anthropic API key.');
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  return data.content[0]?.text || '';
+}
+
+// ===================== SCAN =====================
+function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    scanImageBase64 = ev.target.result.split(',')[1];
+    const mimeMatch = ev.target.result.match(/data:([^;]+);/);
+    window.scanMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    document.getElementById('scan-preview-img').src = ev.target.result;
+    document.getElementById('scan-preview').style.display = 'block';
+    document.getElementById('scan-drop-zone').style.display = 'none';
+    document.getElementById('scan-results').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearScan() {
+  scanImageBase64 = null;
+  pendingScanItems = [];
+  document.getElementById('scan-preview').style.display = 'none';
+  document.getElementById('scan-drop-zone').style.display = 'block';
+  document.getElementById('scan-processing').style.display = 'none';
+  document.getElementById('scan-results').style.display = 'none';
+  document.getElementById('scan-file-input').value = '';
+  document.getElementById('scan-results-list').innerHTML = '';
+}
+
+async function processScan() {
+  if (!scanImageBase64) return;
+  if (!getApiKey()) { showToast('Add your API key in Settings first', 'error'); navigate('settings'); return; }
+
+  document.getElementById('scan-preview').style.display = 'none';
+  document.getElementById('scan-processing').style.display = 'block';
+
+  const projectNames = state.projects.map(p => p.name).join(', ') || 'none yet';
+
+  const system = `You are a personal assistant that reads handwritten or typed notes and extracts structured action items.
+Return ONLY a JSON array of items. No preamble, no explanation, no markdown fences.
+
+HANDWRITING READING TIPS — apply these carefully:
+- Read each word slowly and consider context clues to fill in unclear letters
+- Common ambiguous letters: a/o/u, n/m/ri, l/i/1, e/c, h/n, d/cl, f/t
+- If a word looks like a name, it probably is — use context (meeting notes, follow-up, etc.)
+- Infer missing words from context (e.g. "call ___" likely means call a person)
+- Numbers and dates: 1 vs 7, 9 vs 4, 0 vs 6 — use context of surrounding text
+- If truly unreadable, use [?] in the title and note it in the notes field
+
+Each item must have:
+- "type": "task" | "meeting" | "followup" | "note"
+- "title": string (concise, action-oriented, correct any obvious misreads)
+- "priority": "high" | "medium" | "low"
+- "dueDate": "YYYY-MM-DD" or "" if unclear. Today is ${new Date().toISOString().slice(0,10)}.
+- "project": string — match to existing projects if possible, or suggest a new one, or ""
+- "notes": string — extra context, or note if handwriting was unclear
+
+Existing projects: ${projectNames}
+
+Be thorough. Capture everything actionable. Mark ambiguous items as type "note".`;
+
+  try {
+    const result = await callClaude([{
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: window.scanMime || 'image/jpeg', data: scanImageBase64 }
+        },
+        { type: 'text', text: 'Please carefully read all handwritten and typed text in this image. Extract every action item, task, meeting, and follow-up. For unclear handwriting, use context to make your best interpretation and flag anything uncertain in the notes field.' }
+      ]
+    }], system);
+
+    const clean = result.replace(/```json|```/g, '').trim();
+    pendingScanItems = JSON.parse(clean);
+    document.getElementById('scan-processing').style.display = 'none';
+    renderScanResults();
+  } catch(e) {
+    document.getElementById('scan-processing').style.display = 'none';
+    document.getElementById('scan-preview').style.display = 'block';
+    showToast(e.message || 'Error processing notes', 'error');
+  }
+}
+
+function renderScanResults() {
+  const list = document.getElementById('scan-results-list');
+  list.innerHTML = '';
+
+  if (!pendingScanItems.length) {
+    list.innerHTML = '<div class="empty-state">No items found in these notes.</div>';
+    document.getElementById('scan-results').style.display = 'block';
+    return;
+  }
+
+  pendingScanItems.forEach((item, i) => {
+    item._state = 'pending';
+    item._id = i;
+
+    const typeClass = { task: 'type-task', meeting: 'type-meeting', followup: 'type-followup', note: 'type-note' }[item.type] || 'type-task';
+    const typeLabel = { task: 'Task', meeting: 'Meeting', followup: 'Follow-up', note: 'Note' }[item.type] || 'Task';
+
+    const projectOptions = state.projects.map(p =>
+      `<option value="${p.name}" ${p.name === item.project ? 'selected' : ''}>${p.name}</option>`
+    ).join('');
+
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.id = `result-card-${i}`;
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.innerHTML = `
+      <span class="result-type-badge ${typeClass}">${typeLabel}</span>
+      <div class="result-body">
+        <div class="result-edit">
+          <input class="result-input" id="result-title-${i}" value="${escHtml(item.title)}" placeholder="Task title">
+        </div>
+        <div class="result-meta" style="margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <select class="result-input" id="result-type-${i}" style="width:auto;padding:4px 8px;font-size:11px">
+            <option value="task" ${item.type==='task'?'selected':''}>Task</option>
+            <option value="meeting" ${item.type==='meeting'?'selected':''}>Meeting</option>
+            <option value="followup" ${item.type==='followup'?'selected':''}>Follow-up</option>
+            <option value="note" ${item.type==='note'?'selected':''}>Note</option>
+          </select>
+          <select class="result-input" id="result-priority-${i}" style="width:auto;padding:4px 8px;font-size:11px">
+            <option value="high" ${item.priority==='high'?'selected':''}>High</option>
+            <option value="medium" ${item.priority==='medium'?'selected':''}>Medium</option>
+            <option value="low" ${item.priority==='low'?'selected':''}>Low</option>
+          </select>
+          <input type="date" class="result-input" id="result-due-${i}" value="${item.dueDate||''}" style="width:auto;padding:4px 8px;font-size:11px">
+          <select class="result-input" id="result-project-${i}" style="width:auto;padding:4px 8px;font-size:11px">
+            <option value="">No project</option>
+            ${projectOptions}
+            <option value="${item.project}" ${item.project && !state.projects.find(p=>p.name===item.project) ? 'selected' : ''}>${item.project && !state.projects.find(p=>p.name===item.project) ? '+ ' + item.project : ''}</option>
+          </select>
+        </div>
+        ${item.notes ? `<div style="font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:8px">${escHtml(item.notes)}</div>` : ''}
+        <div class="result-actions">
+          <button class="btn btn-sm" style="background:var(--green-dim);color:var(--green);border:1px solid transparent" onclick="acceptItem(${i})">✓ Accept</button>
+          <button class="btn btn-ghost btn-sm" onclick="dismissItem(${i})">✕ Dismiss</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  document.getElementById('scan-results').style.display = 'block';
+  document.getElementById('scan-confirm-row').style.display = 'flex';
+}
+
+function acceptItem(i) {
+  pendingScanItems[i]._state = 'accepted';
+  const card = document.getElementById(`result-card-${i}`);
+  card.classList.add('accepted');
+  card.classList.remove('dismissed');
+  // Update button states
+  const btns = card.querySelectorAll('.result-action-btn');
+  btns.forEach(b => b.classList.remove('active-btn'));
+  card.querySelector('.accept-btn')?.classList.add('active-btn');
+}
+
+function dismissItem(i) {
+  const card = document.getElementById(`result-card-${i}`);
+  if (!card) return;
+  pendingScanItems[i]._state = 'dismissed';
+  // Animate out then remove
+  card.style.overflow = 'hidden';
+  card.style.transition = 'opacity 0.2s, transform 0.2s, max-height 0.35s 0.15s, margin-bottom 0.35s 0.15s, padding 0.35s 0.15s, border-width 0.35s 0.15s';
+  card.style.opacity = '0';
+  card.style.transform = 'translateX(18px)';
+  card.style.maxHeight = card.offsetHeight + 'px';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.style.maxHeight = '0';
+      card.style.marginBottom = '0';
+      card.style.padding = '0';
+      card.style.borderWidth = '0';
+    });
+  });
+  setTimeout(() => card.remove(), 550);
+}
+
+function acceptAllItems() {
+  pendingScanItems.forEach((_, i) => acceptItem(i));
+}
+
+function confirmAccepted() {
+  const accepted = pendingScanItems.filter(item => item._state === 'accepted');
+  if (!accepted.length) { showToast('Accept at least one item first', 'error'); return; }
+
+  accepted.forEach((item, i) => {
+    const idx = item._id;
+    const title = document.getElementById(`result-title-${idx}`)?.value || item.title;
+    const type = document.getElementById(`result-type-${idx}`)?.value || item.type;
+    const priority = document.getElementById(`result-priority-${idx}`)?.value || item.priority;
+    const dueDate = document.getElementById(`result-due-${idx}`)?.value || item.dueDate;
+    const project = document.getElementById(`result-project-${idx}`)?.value || item.project;
+
+    // Auto-create project if new
+    if (project && !state.projects.find(p => p.name === project)) {
+      state.projects.push({ id: genId(), name: project, description: '', createdAt: new Date().toISOString() });
+    }
+
+    state.tasks.push({
+      id: genId(),
+      title: title.trim(),
+      type,
+      priority,
+      dueDate,
+      project,
+      notes: item.notes || '',
+      status: 'todo',
+      createdAt: new Date().toISOString()
+    });
+  });
+
+  saveState();
+  updateProjectDropdowns();
+  showToast(`${accepted.length} item${accepted.length > 1 ? 's' : ''} added to tasks`, 'success');
+  clearScan();
+}
+
+// ===================== SCHEDULE =====================
+function handleScheduleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    scheduleImageBase64 = ev.target.result.split(',')[1];
+    const m = ev.target.result.match(/data:([^;]+);/);
+    window.scheduleMime = m ? m[1] : 'image/jpeg';
+    document.getElementById('schedule-preview-img').src = ev.target.result;
+    document.getElementById('schedule-preview').style.display = 'block';
+    document.getElementById('schedule-drop-zone').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function getWeekKey(dateStr) {
+  // Returns the Monday date string for any given date, used as week archive key
+  const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
+  const dow = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((dow + 6) % 7));
+  return 'week_' + monday.toISOString().slice(0, 10);
+}
+
+function archiveCurrentWeek() {
+  if (!state.scheduleData) return;
+  const key = getWeekKey(state.scheduleDate ? state.scheduleDate.slice(0, 10) : null);
+  if (!state.weekHistory) state.weekHistory = {};
+  state.weekHistory[key] = {
+    archivedAt: new Date().toISOString(),
+    weekStart: key.replace('week_', ''),
+    scheduleData: state.scheduleData
+  };
+}
+
+function wipeAndReimportSchedule() {
+  if (!confirm('Import a new week? The current week will be saved to history.')) return;
+  archiveCurrentWeek();
+  state.scheduleData = null;
+  state.scheduleDate = null;
+  saveState();
+  clearSchedule();
+  renderHome();
+  renderPastWeeks();
+}
+
+function clearSchedule() {
+  scheduleImageBase64 = null;
+  document.getElementById('schedule-preview').style.display = 'none';
+  document.getElementById('schedule-drop-zone').style.display = 'block';
+  document.getElementById('schedule-result').style.display = 'none';
+  document.getElementById('schedule-processing').style.display = 'none';
+  document.getElementById('schedule-file-input').value = '';
+  // Keep scheduleData in state — only wipe on explicit new import
+}
+
+async function processSchedule() {
+  if (!scheduleImageBase64) return;
+  if (!getApiKey()) { showToast('Add your API key in Settings first', 'error'); navigate('settings'); return; }
+
+  document.getElementById('schedule-preview').style.display = 'none';
+  document.getElementById('schedule-processing').style.display = 'block';
+
+  const now = new Date();
+  const todayStr2 = now.toISOString().slice(0, 10);
+
+  // Build the Mon-Sun dates for the current week
+  const weekDays = [];
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  for (let d = 0; d < 7; d++) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + d);
+    weekDays.push({
+      date: day.toISOString().slice(0, 10),
+      label: day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+    });
+  }
+
+  const system = `You are a personal assistant parsing a calendar screenshot into a structured weekly briefing.
+Return ONLY a JSON object — no preamble, no explanation, no markdown fences.
+
+The week runs ${weekDays[0].label} through ${weekDays[6].label}. Today is ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
+
+Return this exact shape:
+{
+  "overview": "1-2 sentence summary of the week overall",
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "dayLabel": "Monday, Apr 7",
+      "events": [
+        { "time": "9:00 AM", "title": "Event title", "type": "meeting|event|deadline|other", "notes": "" }
+      ]
+    }
+  ]
+}
+
+Include all 7 days Mon-Sun. Days with nothing get an empty events array.
+For each event extract: exact time if visible, title, type (meeting/event/deadline/other), and any brief notes.
+Be thorough — capture every item visible on the calendar.`;
+
+  try {
+    const result = await callClaude([{
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: window.scheduleMime || 'image/jpeg', data: scheduleImageBase64 }
+        },
+        { type: 'text', text: 'Please parse this calendar screenshot into the structured weekly briefing JSON.' }
+      ]
+    }], system);
+
+    const clean = result.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    document.getElementById('schedule-processing').style.display = 'none';
+
+    state.scheduleData = parsed;
+    state.scheduleDate = new Date().toISOString();
+    saveState();
+    renderScheduleResult();
+    renderHome();
+  } catch(e) {
+    document.getElementById('schedule-processing').style.display = 'none';
+    document.getElementById('schedule-preview').style.display = 'block';
+    showToast(e.message || 'Error analyzing schedule', 'error');
+  }
+}
+
+// ===================== SCHEDULE RENDER =====================
+window._scheduleEventMap = {};
+
+function renderScheduleResult() {
+  const data = state.scheduleData;
+  if (!data) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const resultEl = document.getElementById('schedule-result');
+  const textEl = document.getElementById('schedule-result-text');
+
+  window._scheduleEventMap = {};
+  let eventIdx = 0;
+
+  const typeIcon  = { meeting: '👥', event: '📌', deadline: '🔴', other: '·', task: '✓' };
+  const typeBadge = { meeting: 'var(--blue)', event: 'var(--accent)', deadline: 'var(--red)', other: 'var(--text3)', task: 'var(--text3)' };
+
+  // Overview strip
+  let html = '';
+  if (data.overview) {
+    html += `<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:20px;padding:14px 18px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent)">${escHtml(data.overview)}</div>`;
+  }
+
+  // Separate Mon-Fri from weekend
+  const allDays   = data.days || [];
+  const weekdays  = allDays.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow >= 1 && dow <= 5; });
+  const weekend   = allDays.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 6; });
+
+  // Ensure Mon-Fri order
+  weekdays.sort((a, b) => a.date.localeCompare(b.date));
+
+  // ---- 5-column board ----
+  html += `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start">`;
+
+  weekdays.forEach(day => {
+    const isToday  = day.date === today;
+    const isPast   = day.date < today;
+    const dayTasks = state.tasks.filter(t => t.dueDate === day.date && t.status !== 'done');
+    const shortLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+    const dateNum    = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    const allItems = [
+      ...(day.events || []).map(e => ({ ...e, _source: 'calendar' })),
+      ...dayTasks.map(t => ({ time: '', title: t.title, type: 'task', notes: '', _source: 'task' }))
+    ];
+
+    const totalCount = allItems.length;
+
+    html += `<div style="background:var(--surface);border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius-lg);overflow:hidden;opacity:${isPast && !isToday ? '0.65' : '1'}">
+      <!-- Column header -->
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border);background:${isToday ? 'var(--accent-dim)' : 'var(--surface2)'}">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;font-family:'IBM Plex Mono',monospace;color:${isToday ? 'var(--accent)' : 'var(--text3)'}">${shortLabel}</div>
+            <div style="font-size:13px;font-weight:600;color:${isToday ? 'var(--accent)' : 'var(--text)'};margin-top:1px">${dateNum}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${totalCount > 0 ? `<span style="font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);color:var(--text3);padding:1px 7px;border-radius:10px">${totalCount}</span>` : ''}
+            ${isToday ? `<span style="font-size:9px;font-family:'IBM Plex Mono',monospace;background:var(--accent);color:#1a1600;padding:1px 6px;border-radius:10px;font-weight:600">TODAY</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <!-- Events -->
+      <div style="padding:10px 8px;min-height:60px;display:flex;flex-direction:column;gap:6px">`;
+
+    if (!allItems.length) {
+      html += `<div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;text-align:center;padding:12px 0">—</div>`;
+    } else {
+      allItems.forEach(item => {
+        const isTask   = item._source === 'task';
+        const icon     = typeIcon[item.type]  || '·';
+        const badgeCol = typeBadge[item.type] || 'var(--text3)';
+        const key      = 'ev_' + (eventIdx++);
+
+        if (!isTask) {
+          window._scheduleEventMap[key] = { date: day.date, title: item.title, time: item.time || '', type: item.type || 'other', notes: item.notes || '' };
+        }
+
+        html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;position:relative">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:500;color:${isTask ? 'var(--text2)' : 'var(--text)'};line-height:1.35;word-break:break-word">${escHtml(item.title)}</div>
+              ${item.time ? `<div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:3px">${escHtml(item.time)}</div>` : ''}
+            </div>
+            ${!isTask ? `<div style="display:flex;gap:3px;flex-shrink:0;margin-left:2px">
+              <button class="icon-btn" onclick="openEditEventByKey('${key}')" style="width:20px;height:20px;font-size:10px;opacity:0.5;border:none" title="Edit">✎</button>
+              <button class="icon-btn delete" onclick="removeEventByKey('${key}')" style="width:20px;height:20px;font-size:9px;opacity:0.4;border:none" title="Remove">✕</button>
+            </div>` : `<span style="font-size:9px;color:var(--text3);font-family:'IBM Plex Mono',monospace;flex-shrink:0">task</span>`}
+          </div>
+          <div style="margin-top:5px">
+            <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:${badgeCol};text-transform:uppercase;letter-spacing:0.5px">${icon} ${item.type || 'other'}</span>
+          </div>
+        </div>`;
+      });
+    }
+
+    html += `        <button onclick="openAddEventModal('${day.date}')" style="margin-top:2px;width:100%;background:transparent;border:1px dashed var(--border);border-radius:7px;padding:6px;font-size:11px;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">+ Add</button>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`; // end grid
+
+  // Weekend strip (compact, only if has content)
+  const weekendItems = weekend.filter(d => {
+    const tasks = state.tasks.filter(t => t.dueDate === d.date && t.status !== 'done');
+    return (d.events || []).length > 0 || tasks.length > 0;
+  });
+
+  if (weekendItems.length) {
+    html += `<div style="margin-top:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:10px">Weekend</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">`;
+
+    weekendItems.forEach(day => {
+      const dayTasks = state.tasks.filter(t => t.dueDate === day.date && t.status !== 'done');
+      const allItems = [
+        ...(day.events || []).map(e => ({ ...e, _source: 'calendar' })),
+        ...dayTasks.map(t => ({ time: '', title: t.title, type: 'task', notes: '', _source: 'task' }))
+      ];
+      const dowLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+      html += `<div style="flex:1;min-width:180px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">${escHtml(dowLabel)}</div>`;
+
+      allItems.forEach(item => {
+        const isTask = item._source === 'task';
+        const key    = 'ev_' + (eventIdx++);
+        if (!isTask) {
+          window._scheduleEventMap[key] = { date: day.date, title: item.title, time: item.time || '', type: item.type || 'other', notes: item.notes || '' };
+        }
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border-radius:6px;margin-bottom:5px">
+          <span style="font-size:11px">${typeIcon[item.type] || '·'}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;color:${isTask ? 'var(--text2)' : 'var(--text)'}">${escHtml(item.title)}</div>
+            ${item.time ? `<div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace">${escHtml(item.time)}</div>` : ''}
+          </div>
+          ${!isTask ? `<div style="display:flex;gap:3px">
+            <button class="icon-btn" onclick="openEditEventByKey('${key}')" style="width:20px;height:20px;font-size:10px;opacity:0.5;border:none">✎</button>
+            <button class="icon-btn delete" onclick="removeEventByKey('${key}')" style="width:20px;height:20px;font-size:9px;opacity:0.4;border:none">✕</button>
+          </div>` : ''}
+        </div>`;
+      });
+
+      html += `<button onclick="openAddEventModal('${day.date}')" style="width:100%;background:transparent;border:1px dashed var(--border);border-radius:6px;padding:5px;font-size:11px;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">+ Add</button>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  }
+
+  textEl.innerHTML = html;
+  resultEl.style.display = 'block';
+}
+
+function openEditEventByKey(key) {
+  const ev = window._scheduleEventMap[key];
+  if (!ev) return;
+  openEditEventModal(ev.date, ev.title, ev.time, ev.type, ev.notes);
+}
+
+function removeEventByKey(key) {
+  const ev = window._scheduleEventMap[key];
+  if (!ev) return;
+  removeScheduleEvent(ev.date, ev.title);
+}
+
+let pendingEventDate = '';
+let editingEventOriginalDate = null;
+let editingEventOriginalTitle = null;
+
+function openAddEventModal(date) {
+  _openEventModal({ date, title: '', time: '', type: 'meeting', notes: '', isEdit: false });
+}
+
+function openEditEventModal(date, title, time, type, notes) {
+  _openEventModal({ date, title, time, type, notes, isEdit: true });
+}
+
+function _openEventModal({ date, title, time, type, notes, isEdit }) {
+  pendingEventDate = date;
+  editingEventOriginalDate = isEdit ? date : null;
+  editingEventOriginalTitle = isEdit ? title : null;
+
+  const label = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const existing = document.getElementById('add-event-modal');
+  if (existing) existing.remove();
+
+  // Build day options for the "move to" dropdown
+  const days = state.scheduleData?.days || [];
+  const dayOptions = days.map(d => {
+    const lbl = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `<option value="${d.date}" ${d.date === date ? 'selected' : ''}>${lbl}</option>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay open';
+  modal.id = 'add-event-modal';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:420px">
+      <button class="modal-close" onclick="document.getElementById('add-event-modal').remove()">✕</button>
+      <div class="modal-title">${isEdit ? 'Edit Event' : 'Add to ' + escHtml(label)}</div>
+      <div class="form-group">
+        <label class="form-label">Event / Meeting Title</label>
+        <input type="text" class="form-input" id="new-event-title" placeholder="e.g. Budget review call" value="${escHtml(title)}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Time (optional)</label>
+          <input type="text" class="form-input" id="new-event-time" placeholder="e.g. 2:00 PM" value="${escHtml(time)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="new-event-type">
+            <option value="meeting" ${type==='meeting'?'selected':''}>Meeting</option>
+            <option value="event" ${type==='event'?'selected':''}>Event</option>
+            <option value="deadline" ${type==='deadline'?'selected':''}>Deadline</option>
+            <option value="other" ${type==='other'?'selected':''}>Other</option>
+          </select>
+        </div>
+      </div>
+      ${isEdit && dayOptions ? `
+      <div class="form-group">
+        <label class="form-label">Day</label>
+        <select class="form-select" id="new-event-date">${dayOptions}</select>
+      </div>` : `<input type="hidden" id="new-event-date" value="${date}">`}
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input type="text" class="form-input" id="new-event-notes" placeholder="Any details..." value="${escHtml(notes)}">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="document.getElementById('add-event-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewEvent(${isEdit})">${isEdit ? 'Save Changes' : 'Add Event'}</button>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('new-event-title')?.focus(), 50);
+}
+
+function saveNewEvent(isEdit = false) {
+  const title = document.getElementById('new-event-title')?.value.trim();
+  if (!title) { showToast('Title is required', 'error'); return; }
+
+  const targetDate = document.getElementById('new-event-date')?.value || pendingEventDate;
+
+  const newEvent = {
+    time: document.getElementById('new-event-time')?.value.trim() || '',
+    title,
+    type: document.getElementById('new-event-type')?.value || 'meeting',
+    notes: document.getElementById('new-event-notes')?.value.trim() || ''
+  };
+
+  if (!state.scheduleData) state.scheduleData = { overview: '', days: [] };
+
+  // If editing, remove from original day first
+  if (isEdit && editingEventOriginalDate && editingEventOriginalTitle !== null) {
+    const origDay = state.scheduleData.days.find(d => d.date === editingEventOriginalDate);
+    if (origDay) {
+      origDay.events = (origDay.events || []).filter(e => e.title !== editingEventOriginalTitle);
+    }
+  }
+
+  // Find or create target day
+  let day = state.scheduleData.days.find(d => d.date === targetDate);
+  if (!day) {
+    const d = new Date(targetDate + 'T12:00:00');
+    day = {
+      date: targetDate,
+      dayLabel: d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+      events: []
+    };
+    state.scheduleData.days.push(day);
+    state.scheduleData.days.sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  day.events = day.events || [];
+  day.events.push(newEvent);
+  if (newEvent.time) {
+    day.events.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  }
+
+  saveState();
+  document.getElementById('add-event-modal')?.remove();
+  renderScheduleResult();
+  renderHome();
+
+  const moved = isEdit && editingEventOriginalDate && editingEventOriginalDate !== targetDate;
+  showToast(moved ? 'Event moved' : isEdit ? 'Event updated' : 'Event added', 'success');
+}
+
+function removeScheduleEvent(date, title) {
+  const day = state.scheduleData?.days?.find(d => d.date === date);
+  if (!day) return;
+  day.events = day.events.filter(e => e.title !== title);
+  saveState();
+  renderScheduleResult();
+  renderHome();
+}
+
+function renderPastWeeks() {
+  const container = document.getElementById('past-weeks-section');
+  if (!container) return;
+
+  const history = state.weekHistory || {};
+  const keys = Object.keys(history).sort().reverse(); // most recent first
+
+  if (!keys.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const typeIcon = { meeting: '👥', event: '📌', deadline: '🔴', other: '•', task: '✓' };
+
+  let html = `<div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:16px">Past Weeks</div>`;
+
+  keys.forEach(key => {
+    const entry = history[key];
+    const data = entry.scheduleData;
+    const weekStart = new Date(entry.weekStart + 'T12:00:00');
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+                  ' – ' + weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const totalEvents = (data.days || []).reduce((sum, d) => sum + (d.events || []).length, 0);
+
+    html += `<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;background:var(--surface)"
+           onclick="togglePastWeek('${key}')">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--text)">${label}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px">${totalEvents} event${totalEvents !== 1 ? 's' : ''}</div>
+        </div>
+        <span style="color:var(--text3);font-size:13px" id="chevron-${key}">▸</span>
+      </div>
+      <div id="past-week-${key}" style="display:none;padding:16px 18px;background:var(--surface);border-top:1px solid var(--border)">
+        ${data.overview ? `<div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;padding-bottom:12px;border-bottom:1px solid var(--border)">${escHtml(data.overview)}</div>` : ''}
+        ${(data.days || []).filter(d => (d.events || []).length > 0).map(day => `
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px">${escHtml(day.dayLabel || day.date)}</div>
+            ${(day.events || []).map(e => `
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 10px;border-radius:6px;background:var(--surface2);margin-bottom:5px">
+                <span style="font-size:12px;flex-shrink:0">${typeIcon[e.type] || '•'}</span>
+                <div style="flex:1">
+                  <div style="font-size:13px;color:var(--text)">${escHtml(e.title)}</div>
+                  ${e.time ? `<div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace">${escHtml(e.time)}</div>` : ''}
+                </div>
+              </div>`).join('')}
+          </div>`).join('')}
+        <div style="margin-top:10px">
+          <button class="btn btn-danger btn-sm" onclick="deletePastWeek('${key}')">Delete this week</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function togglePastWeek(key) {
+  const panel = document.getElementById(`past-week-${key}`);
+  const chevron = document.getElementById(`chevron-${key}`);
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.textContent = open ? '▸' : '▾';
+}
+
+function deletePastWeek(key) {
+  if (!confirm('Delete this week from history?')) return;
+  if (state.weekHistory) delete state.weekHistory[key];
+  saveState();
+  renderPastWeeks();
+  showToast('Week removed from history', 'success');
+}
+
+// ===================== TASKS =====================
+function openAddTaskModal(defaults = {}) {
+  document.getElementById('task-modal-title').textContent = 'New Task';
+  document.getElementById('task-modal-id').value = '';
+  document.getElementById('task-title-input').value = defaults.title || '';
+  document.getElementById('task-type-input').value = defaults.type || 'task';
+  document.getElementById('task-priority-input').value = defaults.priority || 'medium';
+  document.getElementById('task-due-input').value = defaults.dueDate || '';
+  document.getElementById('task-project-input').value = defaults.project || '';
+  document.getElementById('task-status-input').value = defaults.status || 'todo';
+  document.getElementById('task-notes-input').value = defaults.notes || '';
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function openEditTaskModal(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  document.getElementById('task-modal-title').textContent = 'Edit Task';
+  document.getElementById('task-modal-id').value = id;
+  document.getElementById('task-title-input').value = task.title;
+  document.getElementById('task-type-input').value = task.type || 'task';
+  document.getElementById('task-priority-input').value = task.priority || 'medium';
+  document.getElementById('task-due-input').value = task.dueDate || '';
+  document.getElementById('task-project-input').value = task.project || '';
+  document.getElementById('task-status-input').value = task.status || 'todo';
+  document.getElementById('task-notes-input').value = task.notes || '';
+  document.getElementById('task-modal').classList.add('open');
+}
+
+function saveTask() {
+  const title = document.getElementById('task-title-input').value.trim();
+  if (!title) { showToast('Title is required', 'error'); return; }
+
+  const id = document.getElementById('task-modal-id').value;
+  const task = {
+    title,
+    type: document.getElementById('task-type-input').value,
+    priority: document.getElementById('task-priority-input').value,
+    dueDate: document.getElementById('task-due-input').value,
+    project: document.getElementById('task-project-input').value,
+    status: document.getElementById('task-status-input').value,
+    notes: document.getElementById('task-notes-input').value,
+  };
+
+  if (id) {
+    const idx = state.tasks.findIndex(t => t.id === id);
+    if (idx >= 0) state.tasks[idx] = { ...state.tasks[idx], ...task };
+  } else {
+    state.tasks.push({ id: genId(), ...task, createdAt: new Date().toISOString() });
+  }
+
+  saveState();
+  closeModal('task-modal');
+  renderTasks();
+  renderHome();
+  showToast(id ? 'Task updated' : 'Task added', 'success');
+}
+
+function toggleTask(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  task.status = task.status === 'done' ? 'todo' : 'done';
+  saveState();
+  renderTasks();
+  renderHome();
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  saveState();
+  renderTasks();
+  renderHome();
+  showToast('Task deleted', 'success');
+}
+
+function moveTaskStatus(id, status) {
+  const task = state.tasks.find(t => t.id === id);
+  if (task) { task.status = status; saveState(); renderTasks(); }
+}
+
+function renderTasks() {
+  const filterProject = document.getElementById('filter-project')?.value || '';
+  const filterType = document.getElementById('filter-type')?.value || '';
+  const filterPriority = document.getElementById('filter-priority')?.value || '';
+  const filterStatus = document.getElementById('filter-status')?.value || 'active';
+
+  let tasks = [...state.tasks];
+  if (filterProject) tasks = tasks.filter(t => t.project === filterProject);
+  if (filterType) tasks = tasks.filter(t => t.type === filterType);
+  if (filterPriority) tasks = tasks.filter(t => t.priority === filterPriority);
+  if (filterStatus === 'active') tasks = tasks.filter(t => t.status !== 'done');
+  else if (filterStatus === 'done') tasks = tasks.filter(t => t.status === 'done');
+
+  // Sort: overdue first, then by priority, then by due date
+  const pOrder = { high: 0, medium: 1, low: 2 };
+  tasks.sort((a, b) => {
+    const aOver = isOverdue(a);
+    const bOver = isOverdue(b);
+    if (aOver && !bOver) return -1;
+    if (!aOver && bOver) return 1;
+    if (pOrder[a.priority] !== pOrder[b.priority]) return pOrder[a.priority] - pOrder[b.priority];
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return 0;
+  });
+
+  const total = state.tasks.filter(t => t.status !== 'done').length;
+  const sub = document.getElementById('tasks-count-sub');
+  if (sub) sub.textContent = `${total} active task${total !== 1 ? 's' : ''}`;
+
+  // Update overdue badge
+  const overdue = state.tasks.filter(t => t.status !== 'done' && isOverdue(t)).length;
+  const badge = document.getElementById('overdue-badge');
+  if (badge) {
+    badge.textContent = overdue;
+    badge.style.display = overdue > 0 ? 'block' : 'none';
+  }
+
+  if (currentTaskView === 'list') {
+    const list = document.getElementById('task-list');
+    if (!list) return;
+    if (!tasks.length) {
+      list.innerHTML = `<div class="no-items"><div class="no-items-icon">✓</div>No tasks match these filters.</div>`;
+      return;
+    }
+    list.innerHTML = tasks.map(task => taskItemHtml(task)).join('');
+  } else {
+    renderKanban(tasks);
+  }
+}
+
+function taskItemHtml(task) {
+  const done = task.status === 'done';
+  const overdue = !done && isOverdue(task);
+  const dueToday = !done && isDueToday(task);
+  let dueLabel = '';
+  if (task.dueDate) {
+    if (overdue) dueLabel = `<span class="task-due-label overdue">Overdue · ${formatDate(task.dueDate)}</span>`;
+    else if (dueToday) dueLabel = `<span class="task-due-label due-today">Today</span>`;
+    else dueLabel = `<span class="task-due-label">${formatDate(task.dueDate)}</span>`;
+  }
+  const typeTag = task.type ? `<span class="tag tag-${task.type}">${{task:'task',meeting:'meeting',followup:'follow-up',note:'note'}[task.type]||task.type}</span>` : '';
+  const projTag = task.project ? `<span class="tag tag-project">${escHtml(task.project)}</span>` : '';
+
+  return `<div class="task-item ${done ? 'done' : ''}" id="task-${task.id}">
+    <div class="task-check" onclick="toggleTask('${task.id}')">
+      <span class="task-check-inner">✓</span>
+    </div>
+    <div class="task-body">
+      <div class="task-title">${escHtml(task.title)}</div>
+      <div class="task-tags">
+        <div class="priority-dot p-${task.priority||'medium'}"></div>
+        ${typeTag}${projTag}${dueLabel}
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="icon-btn" onclick="openEditTaskModal('${task.id}')" title="Edit">✎</button>
+      <button class="icon-btn delete" onclick="deleteTask('${task.id}')" title="Delete">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderKanban(filteredTasks) {
+  const cols = { todo: [], inprogress: [], done: [] };
+  filteredTasks.forEach(t => {
+    const col = cols[t.status] || cols.todo;
+    col.push(t);
+  });
+
+  ['todo', 'inprogress', 'done'].forEach(status => {
+    const el = document.getElementById(`kanban-${status}`);
+    const countEl = document.getElementById(`kanban-${status}-count`);
+    if (!el) return;
+    countEl.textContent = cols[status].length;
+    if (!cols[status].length) {
+      el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'DM Mono\',monospace;padding:8px 4px">Empty</div>';
+      return;
+    }
+    el.innerHTML = cols[status].map(task => kanbanCardHtml(task, status)).join('');
+  });
+}
+
+function kanbanCardHtml(task, currentStatus) {
+  const statuses = ['todo', 'inprogress', 'done'];
+  const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
+  const nextLabel = { todo: '→ Start', inprogress: '→ Done', done: '→ Re-open' }[currentStatus];
+  const overdue = isOverdue(task);
+
+  return `<div class="kanban-card">
+    <div class="kanban-card-title">${escHtml(task.title)}</div>
+    <div class="kanban-card-meta">
+      <span class="tag tag-${task.type||'task'}" style="font-size:9px">${task.type||'task'}</span>
+      ${task.dueDate ? `<span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${overdue ? 'var(--red)' : 'var(--text3)'}">${formatDate(task.dueDate)}</span>` : ''}
+    </div>
+    <div class="kanban-card-actions">
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" onclick="moveTaskStatus('${task.id}','${nextStatus}')">${nextLabel}</button>
+      <button class="icon-btn delete" onclick="deleteTask('${task.id}')" title="Delete" style="width:24px;height:24px;font-size:11px">✕</button>
+    </div>
+  </div>`;
+}
+
+function setTaskView(view) {
+  currentTaskView = view;
+  document.getElementById('task-list-view').style.display = view === 'list' ? 'block' : 'none';
+  document.getElementById('task-kanban-view').style.display = view === 'kanban' ? 'block' : 'none';
+  document.getElementById('view-list-btn').classList.toggle('active', view === 'list');
+  document.getElementById('view-kanban-btn').classList.toggle('active', view === 'kanban');
+  renderTasks();
+}
+
+// ===================== PROJECTS =====================
+function openAddProjectModal() {
+  document.getElementById('project-modal-title').textContent = 'New Project';
+  document.getElementById('project-modal-id').value = '';
+  document.getElementById('project-name-input').value = '';
+  document.getElementById('project-desc-input').value = '';
+  document.getElementById('project-modal-save-btn').textContent = 'Create Project';
+  document.getElementById('project-modal').classList.add('open');
+}
+
+function openEditProjectModal(id) {
+  const proj = state.projects.find(p => p.id === id);
+  if (!proj) return;
+  document.getElementById('project-modal-title').textContent = 'Edit Project';
+  document.getElementById('project-modal-id').value = id;
+  document.getElementById('project-name-input').value = proj.name;
+  document.getElementById('project-desc-input').value = proj.description || '';
+  document.getElementById('project-modal-save-btn').textContent = 'Save Changes';
+  document.getElementById('project-modal').classList.add('open');
+}
+
+function saveProject() {
+  const name = document.getElementById('project-name-input').value.trim();
+  if (!name) { showToast('Project name is required', 'error'); return; }
+
+  const id = document.getElementById('project-modal-id').value;
+
+  if (id) {
+    // Edit existing
+    const proj = state.projects.find(p => p.id === id);
+    if (!proj) return;
+    const oldName = proj.name;
+    const newName = name;
+    // If name changed, update all tasks referencing old name
+    if (oldName !== newName) {
+      const conflict = state.projects.find(p => p.name === newName && p.id !== id);
+      if (conflict) { showToast('Another project already has that name', 'error'); return; }
+      state.tasks.forEach(t => { if (t.project === oldName) t.project = newName; });
+    }
+    proj.name = newName;
+    proj.description = document.getElementById('project-desc-input').value.trim();
+    saveState();
+    updateProjectDropdowns();
+    closeModal('project-modal');
+    renderProjects();
+    showToast('Project updated', 'success');
+  } else {
+    // Create new
+    if (state.projects.find(p => p.name === name)) { showToast('Project already exists', 'error'); return; }
+    state.projects.push({
+      id: genId(),
+      name,
+      description: document.getElementById('project-desc-input').value.trim(),
+      createdAt: new Date().toISOString()
+    });
+    saveState();
+    updateProjectDropdowns();
+    closeModal('project-modal');
+    renderProjects();
+    showToast('Project created', 'success');
+  }
+}
+
+function deleteProject(id) {
+  const proj = state.projects.find(p => p.id === id);
+  if (!proj) return;
+  if (!confirm(`Delete project "${proj.name}"? Tasks will not be deleted.`)) return;
+  state.projects = state.projects.filter(p => p.id !== id);
+  saveState();
+  updateProjectDropdowns();
+  renderProjects();
+  showToast('Project deleted', 'success');
+}
+
+function renderProjects() {
+  const grid = document.getElementById('projects-grid');
+  if (!grid) return;
+
+  if (!state.projects.length) {
+    grid.innerHTML = `<div class="no-items" style="grid-column:1/-1"><div class="no-items-icon">📁</div>No projects yet. Create one or scan notes that mention a project.</div>`;
+    return;
+  }
+
+  grid.innerHTML = state.projects.map(proj => {
+    const tasks = state.tasks.filter(t => t.project === proj.name);
+    const done = tasks.filter(t => t.status === 'done').length;
+    const total = tasks.length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const preview = tasks.filter(t => t.status !== 'done').slice(0, 3);
+
+    return `<div class="project-card">
+      <div class="project-card-header">
+        <div>
+          <div class="project-name">${escHtml(proj.name)}</div>
+          <div class="project-stats">${total} task${total !== 1 ? 's' : ''} · ${pct}% done${proj.description ? ' · ' + escHtml(proj.description.slice(0, 40)) + (proj.description.length > 40 ? '…' : '') : ''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="icon-btn" onclick="openEditProjectModal('${proj.id}')" title="Edit project">✎</button>
+          <button class="icon-btn delete" onclick="deleteProject('${proj.id}')" title="Delete project">✕</button>
+        </div>
+      </div>
+      <div class="project-progress-bar">
+        <div class="project-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="project-task-preview">
+        ${preview.length ? preview.map(t => `
+          <div class="project-task-row">
+            <div class="priority-dot p-${t.priority||'medium'}"></div>
+            <span>${escHtml(t.title)}</span>
+          </div>`).join('') : '<div style="font-size:12px;color:var(--text3);font-family:\'DM Mono\',monospace">No open tasks</div>'}
+      </div>
+      ${total > 0 ? `<div style="margin-top:14px"><button class="btn btn-ghost btn-sm" onclick="filterByProject('${escHtml(proj.name)}')">View all tasks →</button></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function filterByProject(name) {
+  navigate('tasks');
+  setTimeout(() => {
+    document.getElementById('filter-project').value = name;
+    renderTasks();
+  }, 50);
+}
+
+function updateProjectDropdowns() {
+  const opts = state.projects.map(p => `<option value="${escHtml(p.name)}">${escHtml(p.name)}</option>`).join('');
+
+  const filterEl = document.getElementById('filter-project');
+  if (filterEl) filterEl.innerHTML = `<option value="">All Projects</option>${opts}`;
+
+  const taskEl = document.getElementById('task-project-input');
+  if (taskEl) taskEl.innerHTML = `<option value="">No Project</option>${opts}`;
+}
+
+// ===================== HOME =====================
+function renderHome() {
+  const today = todayStr();
+  const weekEnd = weekEndStr();
+
+  const overdue = state.tasks.filter(t => t.status !== 'done' && isOverdue(t));
+  const dueToday = state.tasks.filter(t => t.status !== 'done' && isDueToday(t));
+  const upcoming = state.tasks.filter(t => t.status !== 'done' && t.dueDate > today && t.dueDate <= weekEnd);
+
+  document.getElementById('stat-overdue').textContent = overdue.length;
+  document.getElementById('stat-today').textContent = dueToday.length;
+  document.getElementById('stat-upcoming').textContent = upcoming.length;
+
+  // Priority items (high priority, not done)
+  const pItems = state.tasks
+    .filter(t => t.status !== 'done' && (t.priority === 'high' || isOverdue(t)))
+    .slice(0, 5);
+
+  const prioEl = document.getElementById('home-priority-tasks');
+  prioEl.innerHTML = pItems.length
+    ? pItems.map(t => digestTaskRow(t)).join('')
+    : '<div class="empty-state">No urgent items. Nice.</div>';
+
+  // Due today
+  const todayEl = document.getElementById('home-today-tasks');
+  todayEl.innerHTML = dueToday.length
+    ? dueToday.slice(0, 5).map(t => digestTaskRow(t)).join('')
+    : '<div class="empty-state">Nothing due today.</div>';
+
+  // Schedule — full 5-column board on home (read-only, click goes to schedule page)
+  const schedEl = document.getElementById('home-schedule-summary');
+  if (state.scheduleData && state.scheduleData.days) {
+    const typeIcon  = { meeting: '👥', event: '📌', deadline: '🔴', other: '·', task: '✓' };
+    const typeBadge = { meeting: 'var(--blue)', event: 'var(--accent)', deadline: 'var(--red)', other: 'var(--text3)', task: 'var(--text3)' };
+
+    const allDays  = state.scheduleData.days || [];
+    const weekdays = allDays.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow >= 1 && dow <= 5; });
+    const weekend  = allDays.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 6; });
+    weekdays.sort((a, b) => a.date.localeCompare(b.date));
+
+    let html = '';
+
+    // Overview strip
+    if (state.scheduleData.overview) {
+      html += `<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius);border-left:3px solid var(--accent)">${escHtml(state.scheduleData.overview)}</div>`;
+    }
+
+    html += `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start">`;
+
+    weekdays.forEach(day => {
+      const isToday2 = day.date === today;
+      const isPast   = day.date < today;
+      const dayTasks = state.tasks.filter(t => t.dueDate === day.date && t.status !== 'done');
+      const shortLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const dateNum    = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      const allItems = [
+        ...(day.events || []).map(e => ({ ...e, _source: 'calendar' })),
+        ...dayTasks.map(t => ({ time: '', title: t.title, type: 'task', notes: '', _source: 'task' }))
+      ];
+
+      html += `<div style="background:var(--surface);border:1px solid ${isToday2 ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius-lg);overflow:hidden;opacity:${isPast && !isToday2 ? '0.65' : '1'};cursor:pointer" onclick="navigate('schedule')">
+        <div style="padding:10px 12px;border-bottom:1px solid var(--border);background:${isToday2 ? 'var(--accent-dim)' : 'var(--surface2)'}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;font-family:'IBM Plex Mono',monospace;color:${isToday2 ? 'var(--accent)' : 'var(--text3)'}">${shortLabel}</div>
+              <div style="font-size:13px;font-weight:600;color:${isToday2 ? 'var(--accent)' : 'var(--text)'};margin-top:1px">${dateNum}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px">
+              ${allItems.length > 0 ? `<span style="font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--surface3);color:var(--text3);padding:1px 7px;border-radius:10px">${allItems.length}</span>` : ''}
+              ${isToday2 ? `<span style="font-size:9px;font-family:'IBM Plex Mono',monospace;background:var(--accent);color:#1a1600;padding:1px 6px;border-radius:10px;font-weight:600">TODAY</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="padding:10px 8px;min-height:50px;display:flex;flex-direction:column;gap:5px">`;
+
+      if (!allItems.length) {
+        html += `<div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;text-align:center;padding:10px 0">—</div>`;
+      } else {
+        allItems.forEach(item => {
+          const isTask   = item._source === 'task';
+          const icon     = typeIcon[item.type]  || '·';
+          const badgeCol = typeBadge[item.type] || 'var(--text3)';
+          html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 8px">
+            <div style="font-size:12px;font-weight:500;color:${isTask ? 'var(--text2)' : 'var(--text)'};line-height:1.35;word-break:break-word">${escHtml(item.title)}</div>
+            ${item.time ? `<div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px">${escHtml(item.time)}</div>` : ''}
+            <div style="margin-top:4px"><span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:${badgeCol};text-transform:uppercase;letter-spacing:0.5px">${icon} ${item.type || 'other'}</span></div>
+          </div>`;
+        });
+      }
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+
+    // Weekend strip on home too
+    const weekendItems = weekend.filter(d => {
+      const tasks = state.tasks.filter(t => t.dueDate === d.date && t.status !== 'done');
+      return (d.events || []).length > 0 || tasks.length > 0;
+    });
+
+    if (weekendItems.length) {
+      html += `<div style="margin-top:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);cursor:pointer" onclick="navigate('schedule')">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:8px">Weekend</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">`;
+      weekendItems.forEach(day => {
+        const dayTasks = state.tasks.filter(t => t.dueDate === day.date && t.status !== 'done');
+        const allItems = [...(day.events || []), ...dayTasks.map(t => ({ time: '', title: t.title, type: 'task' }))];
+        const dowLabel = new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        html += `<div style="flex:1;min-width:160px">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px">${escHtml(dowLabel)}</div>
+          ${allItems.map(e => `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border)">${typeIcon[e.type]||'·'} ${escHtml(e.title)}</div>`).join('')}
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    if (!html.includes('var(--surface2)')) {
+      html = '<div class="empty-state">No events this week. <span style="cursor:pointer;color:var(--accent)" onclick="navigate(\'schedule\')">Add events →</span></div>';
+    }
+
+    schedEl.innerHTML = html;
+    schedEl.classList.remove('empty-state');
+  } else {
+    schedEl.innerHTML = 'No schedule imported yet. <span style="cursor:pointer;color:var(--accent)" onclick="navigate(\'schedule\')">Go to Schedule →</span>';
+    schedEl.classList.add('empty-state');
+  }
+}
+
+function digestTaskRow(task) {
+  const overdue = isOverdue(task);
+  const dueToday = isDueToday(task);
+  let dueStr = '';
+  if (task.dueDate) {
+    if (overdue) dueStr = `<span style="color:var(--red);font-size:10px;font-family:'IBM Plex Mono',monospace">Overdue</span>`;
+    else if (dueToday) dueStr = `<span style="color:var(--accent);font-size:10px;font-family:'IBM Plex Mono',monospace">Today</span>`;
+    else dueStr = `<span class="digest-task-due">${formatDate(task.dueDate)}</span>`;
+  }
+  return `<div class="digest-task-item" onclick="navigate('tasks')">
+    <div class="priority-dot p-${task.priority||'medium'}"></div>
+    <div class="digest-task-title">${escHtml(task.title)}</div>
+    ${dueStr}
+  </div>`;
+}
+
+// ===================== MODALS =====================
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => {
+    if (e.target === el) el.classList.remove('open');
+  });
+});
+
+// ===================== DATA =====================
+function exportData() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fieldnotes-backup-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup exported', 'success');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.tasks || !data.projects) throw new Error('Invalid backup file');
+      if (!confirm('This will replace all current data. Continue?')) return;
+      state = data;
+      saveState();
+      updateProjectDropdowns();
+      renderHome();
+      renderTasks();
+      renderProjects();
+      showToast('Backup imported', 'success');
+    } catch(err) {
+      showToast('Invalid backup file', 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAllData() {
+  if (!confirm('Delete all tasks, projects, and schedule data? This cannot be undone.')) return;
+  state = { tasks: [], projects: [], scheduleSummary: '' };
+  saveState();
+  updateProjectDropdowns();
+  renderHome();
+  renderTasks();
+  renderProjects();
+  showToast('All data cleared', 'success');
+}
+
+// ===================== UTILS =====================
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function weekEndStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + (7 - d.getDay()));
+  return d.toISOString().slice(0, 10);
+}
+
+function isOverdue(task) {
+  if (!task.dueDate || task.status === 'done') return false;
+  return task.dueDate < todayStr();
+}
+
+function isDueToday(task) {
+  if (!task.dueDate || task.status === 'done') return false;
+  return task.dueDate === todayStr();
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Drag zone visual
+const dropZone = document.getElementById('scan-drop-zone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('scan-file-input').files = dt.files;
+      handleScanFile({ target: { files: dt.files } });
+    }
+  });
+}
+
+const schedDropZone = document.getElementById('schedule-drop-zone');
+if (schedDropZone) {
+  schedDropZone.addEventListener('dragover', e => { e.preventDefault(); schedDropZone.classList.add('dragover'); });
+  schedDropZone.addEventListener('dragleave', () => schedDropZone.classList.remove('dragover'));
+  schedDropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    schedDropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('schedule-file-input').files = dt.files;
+      handleScheduleFile({ target: { files: dt.files } });
+    }
+  });
+}
+
+// Init
+init();
+</script>
+</body>
+</html>
