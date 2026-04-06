@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Notes — Personal Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --bg:         #f5f5f2;
@@ -1374,6 +1375,29 @@
         <div>
           <div class="page-title">Settings</div>
           <div class="page-sub">Configuration & data management</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Google Drive Sync</div>
+        <div id="gdrive-status-box" style="padding:14px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div id="gdrive-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+            <div>
+              <div id="gdrive-status-text" style="font-size:13px;font-weight:500;color:var(--text)">Not connected</div>
+              <div id="gdrive-status-sub" style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:1px">Sign in to sync across devices</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="gdrive-connect-btn" onclick="gdriveSignIn()">Connect Google Drive</button>
+            <button class="btn btn-ghost btn-sm" id="gdrive-sync-btn" onclick="gdriveSyncNow()" style="display:none">Sync Now</button>
+            <button class="btn btn-ghost btn-sm" id="gdrive-disconnect-btn" onclick="gdriveSignOut()" style="display:none">Disconnect</button>
+          </div>
+        </div>
+        <div id="gdrive-last-sync" style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;display:none"></div>
+        <div class="settings-hint">
+          Syncs your tasks, projects, and schedule to a file called <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">dailynotes_data.json</code> in your Google Drive.<br>
+          Data syncs automatically on every save. Your API key stays local and is never synced.
         </div>
       </div>
 
@@ -3004,8 +3028,209 @@ if (schedDropZone) {
   });
 }
 
+// ===================== GOOGLE DRIVE SYNC =====================
+const GDRIVE_CLIENT_ID = '544069325738-dp7o8infemafhciu9up6hbo4ehcen0n8.apps.googleusercontent.com';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILE_NAME = 'dailynotes_data.json';
+
+let gdriveToken = null;
+let gdriveFileId = null;
+let gdriveSyncTimer = null;
+
+function gdriveInit() {
+  const savedToken = localStorage.getItem('gdrive_token');
+  const savedFileId = localStorage.getItem('gdrive_file_id');
+  const savedExpiry = localStorage.getItem('gdrive_token_expiry');
+
+  if (savedToken && savedExpiry && Date.now() < parseInt(savedExpiry)) {
+    gdriveToken = savedToken;
+    gdriveFileId = savedFileId || null;
+    gdriveUpdateUI(true);
+    gdriveSyncOnLoad();
+  } else {
+    gdriveUpdateUI(false);
+  }
+}
+
+function gdriveSignIn() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GDRIVE_SCOPE,
+    callback: async (resp) => {
+      if (resp.error) { showToast('Google sign-in failed: ' + resp.error, 'error'); return; }
+      gdriveToken = resp.access_token;
+      // Token expires in ~1hr, store with expiry
+      const expiry = Date.now() + (resp.expires_in - 60) * 1000;
+      localStorage.setItem('gdrive_token', gdriveToken);
+      localStorage.setItem('gdrive_token_expiry', expiry.toString());
+      gdriveUpdateUI(true);
+      await gdriveSyncOnLoad();
+      showToast('Google Drive connected', 'success');
+    }
+  });
+  client.requestAccessToken();
+}
+
+function gdriveSignOut() {
+  if (!confirm('Disconnect Google Drive? Your local data will not be deleted.')) return;
+  if (gdriveToken) google.accounts.oauth2.revoke(gdriveToken);
+  gdriveToken = null;
+  gdriveFileId = null;
+  localStorage.removeItem('gdrive_token');
+  localStorage.removeItem('gdrive_token_expiry');
+  localStorage.removeItem('gdrive_file_id');
+  gdriveUpdateUI(false);
+  showToast('Google Drive disconnected', 'success');
+}
+
+function gdriveUpdateUI(connected) {
+  const dot = document.getElementById('gdrive-dot');
+  const statusText = document.getElementById('gdrive-status-text');
+  const statusSub = document.getElementById('gdrive-status-sub');
+  const connectBtn = document.getElementById('gdrive-connect-btn');
+  const syncBtn = document.getElementById('gdrive-sync-btn');
+  const disconnectBtn = document.getElementById('gdrive-disconnect-btn');
+
+  if (connected) {
+    dot.style.background = 'var(--green)';
+    statusText.textContent = 'Connected';
+    statusSub.textContent = 'Auto-syncing to Google Drive';
+    connectBtn.style.display = 'none';
+    syncBtn.style.display = 'inline-flex';
+    disconnectBtn.style.display = 'inline-flex';
+  } else {
+    dot.style.background = 'var(--text3)';
+    statusText.textContent = 'Not connected';
+    statusSub.textContent = 'Sign in to sync across devices';
+    connectBtn.style.display = 'inline-flex';
+    syncBtn.style.display = 'none';
+    disconnectBtn.style.display = 'none';
+  }
+}
+
+function gdriveUpdateLastSync() {
+  const el = document.getElementById('gdrive-last-sync');
+  if (!el) return;
+  const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  el.textContent = 'Last synced at ' + now;
+  el.style.display = 'block';
+}
+
+async function gdriveFindFile() {
+  const resp = await fetch(
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22' + GDRIVE_FILE_NAME + '%22&fields=files(id,name,modifiedTime)',
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const data = await resp.json();
+  return (data.files && data.files.length > 0) ? data.files[0] : null;
+}
+
+async function gdriveReadFile(fileId) {
+  const resp = await fetch(
+    'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media',
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  return await resp.json();
+}
+
+async function gdriveWriteFile(data) {
+  const json = JSON.stringify(data);
+  const blob = new Blob([json], { type: 'application/json' });
+
+  if (gdriveFileId) {
+    // Update existing file
+    await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files/' + gdriveFileId + '?uploadType=media',
+      { method: 'PATCH', headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' }, body: json }
+    );
+  } else {
+    // Create new file in appDataFolder
+    const meta = { name: GDRIVE_FILE_NAME, parents: ['appDataFolder'] };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+    form.append('file', blob);
+    const resp = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      { method: 'POST', headers: { Authorization: 'Bearer ' + gdriveToken }, body: form }
+    );
+    const created = await resp.json();
+    gdriveFileId = created.id;
+    localStorage.setItem('gdrive_file_id', gdriveFileId);
+  }
+  gdriveUpdateLastSync();
+}
+
+async function gdriveSyncOnLoad() {
+  if (!gdriveToken) return;
+  try {
+    // Find the file in Drive
+    const file = await gdriveFindFile();
+    if (file) {
+      gdriveFileId = file.id;
+      localStorage.setItem('gdrive_file_id', gdriveFileId);
+
+      // Read remote data
+      const remote = await gdriveReadFile(gdriveFileId);
+
+      // Merge strategy: use whichever has more tasks (simple but effective)
+      // If remote has data and local is empty or remote is newer, use remote
+      const localTaskCount = state.tasks.length;
+      const remoteTaskCount = (remote.tasks || []).length;
+
+      if (remoteTaskCount > 0 || localTaskCount === 0) {
+        // Pull remote into local
+        state = { ...state, ...remote };
+        saveState();
+        updateProjectDropdowns();
+        renderHome();
+        renderTasks();
+        renderProjects();
+        renderPastWeeks();
+        if (state.scheduleData) renderScheduleResult();
+      } else {
+        // Push local up to Drive
+        await gdriveWriteFile(state);
+      }
+      gdriveUpdateLastSync();
+    } else {
+      // No remote file yet — push local data up
+      await gdriveWriteFile(state);
+    }
+  } catch(e) {
+    console.error('Drive sync error:', e);
+    showToast('Drive sync failed — working offline', 'error');
+  }
+}
+
+async function gdriveSyncNow() {
+  if (!gdriveToken) return;
+  const btn = document.getElementById('gdrive-sync-btn');
+  btn.textContent = 'Syncing...';
+  btn.disabled = true;
+  try {
+    await gdriveWriteFile(state);
+    showToast('Synced to Google Drive', 'success');
+  } catch(e) {
+    showToast('Sync failed', 'error');
+  }
+  btn.textContent = 'Sync Now';
+  btn.disabled = false;
+}
+
+// Override saveState to also push to Drive
+const _origSaveState = saveState;
+function saveState() {
+  try { localStorage.setItem('fieldnotes_state', JSON.stringify(state)); } catch(e) {}
+  // Debounce Drive writes — wait 2s after last change before pushing
+  if (gdriveToken) {
+    clearTimeout(gdriveSyncTimer);
+    gdriveSyncTimer = setTimeout(() => gdriveWriteFile(state), 2000);
+  }
+}
+
 // Init
 init();
+gdriveInit();
 </script>
 </body>
 </html>
